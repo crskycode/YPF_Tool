@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31729.503
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YPF_Tool", "YPF_Tool.csproj", "{FEE7BC4D-DE6E-40FC-979E-667542845CA1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FEE7BC4D-DE6E-40FC-979E-667542845CA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEE7BC4D-DE6E-40FC-979E-667542845CA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEE7BC4D-DE6E-40FC-979E-667542845CA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEE7BC4D-DE6E-40FC-979E-667542845CA1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {76B63AC8-DD8F-466E-8C20-0FFBDAECE0F9}
+	EndGlobalSection
+EndGlobal
