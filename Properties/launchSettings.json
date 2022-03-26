@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "YPF_Tool": {
+      "commandName": "Project",
+      "commandLineArgs": "-c cgsys3.ypf \"E:\\GalGames_Work\\OnWork\\アンレス テルミナリア\\image\\cgsys\"",
+      "workingDirectory": "E:\\GalGames_Work\\OnWork\\アンレス テルミナリア\\image"
+    }
+  }
+}
