@@ -1,16 +1,13 @@
 ### YPF_Tool
 
-Create Yu-Ris script engine YPF archive.
+Create or Extract Yu-Ris script engine YPF archive.
 
 #### Usage
 
 ```
 YPF_Tool -c "e:\game\pac\cg.new.ypf" "e:\extract\cg"
+YPF_Tool -e "e:\game\pac\cg.ypf" "e:\extract\cg"
 ```
-
-#### Note
-
-No compression
 
 #### Staff
 

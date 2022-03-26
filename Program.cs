@@ -15,6 +15,7 @@ namespace YPF_Tool
                 Console.WriteLine("Yu-Ris YPF Tool");
                 Console.WriteLine("Usage:");
                 Console.WriteLine("  Create YPF archive : YPF_Tool -c [output.arc] [root directory path]");
+                Console.WriteLine("  Extract YPF archive : YPF_Tool -e [input.ypf] [extract directory path]");
                 Console.WriteLine("Press any key to continue...");
                 Console.ReadKey();
                 return;
@@ -29,6 +30,19 @@ namespace YPF_Tool
                 try
                 {
                     YPF.Create(outputPath, rootPath);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.WriteLine(e.StackTrace);
+                }
+            }
+
+            if (mode == "-e")
+            {
+                try
+                {
+                    YPF.Extract(outputPath, rootPath);
                 }
                 catch (Exception e)
                 {

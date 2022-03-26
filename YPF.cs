@@ -10,8 +10,11 @@ namespace YPF_Tool
 {
     static class YPF
     {
-        public static void Parse(string filePath)
+        static List<YPFEntry> Parse(string filePath)
         {
+
+            var entries = new List<YPFEntry>();
+
             using var reader = new BinaryReader(File.OpenRead(filePath));
 
             if (reader.ReadInt32() != 0x00465059)
@@ -59,20 +62,50 @@ namespace YPF_Tool
                 // Decrypt name bytes
                 DecryptNameBytes(nameBytes);
 
-                var entryName = nameEncoding.GetString(nameBytes);
+                entries.Add(new YPFEntry
+                {
+                    EntryAddr = entryAddr,
+                    EntryName = nameEncoding.GetString(nameBytes),
+                    EntryType = indexReader.ReadByte(),
+                    CompressMethod = indexReader.ReadByte(), // 0 - no compression, 1 - deflate or snappy
+                    OriginalSize = indexReader.ReadInt32(),
+                    CompressedSize = indexReader.ReadInt32(),
+                    DataOffset = indexReader.ReadInt64(),
+                    DataHash = indexReader.ReadInt32() // using MurmurHash2
+                });
 
-                var entryType = indexReader.ReadByte();
-                var compressMethod = indexReader.ReadByte(); // 0 - no compression, 1 - deflate or snappy
-                var originalSize = indexReader.ReadInt32();
-                var compressedSize = indexReader.ReadInt32();
-                var dataOffset = indexReader.ReadInt64();
-                var dataHash = indexReader.ReadInt32(); // using MurmurHash2
-
-                Debug.WriteLine(string.Format("{0:X8} | type={1:X2} compressMethod={2:X2} originalSize={3:X8} compressedSize={4:X8} offset={5:X8} hash={6:X8} name=\"{7}\"",
-                    entryAddr, entryType, compressMethod, originalSize, compressedSize, dataOffset, dataHash, entryName));
+                //Console.WriteLine(string.Format("{0:X8} | type={1:X2} compressMethod={2:X2} originalSize={3:X8} compressedSize={4:X8} offset={5:X8} hash={6:X8} name=\"{7}\"",
+                //    entryAddr, entryType, compressMethod, originalSize, compressedSize, dataOffset, dataHash, entryName));
             }
 
             Debug.Assert(indexStream.Position == indexStream.Length);
+
+            return entries;
+        }
+
+        public static void Extract(string filePath, string rootPath)
+        {
+            var entries = Parse(filePath);
+
+            using var reader = new BinaryReader(File.OpenRead(filePath));
+
+            foreach (var entry in entries)
+            {
+                var targetfile = Path.Combine(rootPath, entry.EntryName);
+                Directory.CreateDirectory(Path.GetDirectoryName(targetfile));
+                using var writer = new BinaryWriter(File.Create(targetfile));
+
+                reader.BaseStream.Seek(entry.DataOffset, SeekOrigin.Begin);
+
+                var data = entry.CompressMethod == 1 ? Extensions.Inflate(reader.ReadBytes(entry.OriginalSize)) : reader.ReadBytes(entry.OriginalSize);
+
+                writer.Write(data);
+                writer.Flush();
+                writer.Close();
+
+                Console.WriteLine(string.Format("{0:X8} | type={1:X2} compressMethod={2:X2} originalSize={3:X8} compressedSize={4:X8} offset={5:X8} hash={6:X8} name=\"{7}\"",
+                    entry.EntryAddr, entry.EntryType, entry.CompressMethod, entry.OriginalSize, entry.CompressedSize, entry.DataOffset, entry.DataHash, entry.EntryName));
+            }
         }
 
         public static void Create(string filePath, string rootPath)
@@ -81,12 +114,15 @@ namespace YPF_Tool
 
             // Grab files
 
+            var tpath = rootPath.Substring(rootPath.LastIndexOf('\\') + 1);
+
             foreach (var localPath in Directory.EnumerateFiles(rootPath, "*.*", SearchOption.AllDirectories))
             {
+                var filename = Path.Combine(tpath, Path.GetRelativePath(rootPath, localPath));
                 entries.Add(new TEntry
                 {
-                    LocalPath = localPath,
-                    Path = Path.GetRelativePath(rootPath, localPath)
+                    LocalPath = filename,
+                    Path = filename
                 });
             }
 
@@ -131,6 +167,7 @@ namespace YPF_Tool
                 var nameHash = MurmurHash2.Compute(nameBytes);
                 var nameLength = Convert.ToByte(nameLengthTable[nameBytes.Length]);
                 var nameExt = Path.GetExtension(entry.Path);
+                entry.CompressMethod = nameExt == ".txt" ? (byte)1 : (byte)0;
 
                 EncryptNameBytes(nameBytes);
 
@@ -161,9 +198,12 @@ namespace YPF_Tool
                 Console.WriteLine($"Add \"{entry.Path}\"");
 
                 var data = File.ReadAllBytes(entry.LocalPath);
+                entry.DataSize = (uint)data.Length;
+
+                data = entry.CompressMethod == 1 ? Extensions.Deflate(data) : data;
+                entry.CompressedDataSize = (uint)data.Length;
 
                 entry.DataOffset = writer.BaseStream.Position;
-                entry.DataSize = (uint)data.Length;
                 entry.DataHash = MurmurHash2.Compute(data);
 
                 writer.Write(data);
@@ -176,9 +216,9 @@ namespace YPF_Tool
             {
                 writer.BaseStream.Position = entry.Position;
 
-                writer.Write((byte)0);          // compress method, 0 - no compression
+                writer.Write(entry.CompressMethod);          // compress method, 0 - no compression
                 writer.Write(entry.DataSize);   // original size
-                writer.Write(entry.DataSize);   // compressed size, equal to original size if no compression
+                writer.Write(entry.CompressedDataSize);   // compressed size, equal to original size if no compression
                 writer.Write(entry.DataOffset);
                 writer.Write(entry.DataHash);
             }
@@ -275,10 +315,24 @@ namespace YPF_Tool
         {
             public string LocalPath;
             public string Path;
+            public byte CompressMethod;
             public long Position;
             public long DataOffset;
             public uint DataSize;
+            public uint CompressedDataSize;
             public uint DataHash;
+        }
+
+        class YPFEntry
+        {
+            public string EntryName;
+            public byte EntryType;
+            public byte CompressMethod;
+            public long EntryAddr;
+            public int OriginalSize;
+            public int CompressedSize;
+            public long DataOffset;
+            public int DataHash;
         }
     }
 }
