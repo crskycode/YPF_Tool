@@ -118,11 +118,11 @@ namespace YPF_Tool
 
             foreach (var localPath in Directory.EnumerateFiles(rootPath, "*.*", SearchOption.AllDirectories))
             {
-                var filename = Path.GetRelativePath(rootPath, localPath);
+                var filename = Path.Combine(tpath, Path.GetRelativePath(rootPath, localPath));
                 entries.Add(new TEntry
                 {
-                    Path = filename,
-                    LocalPath = Path.Combine(tpath, filename)
+                    LocalPath = filename,
+                    Path = filename
                 });
             }
 
@@ -167,6 +167,7 @@ namespace YPF_Tool
                 var nameHash = MurmurHash2.Compute(nameBytes);
                 var nameLength = Convert.ToByte(nameLengthTable[nameBytes.Length]);
                 var nameExt = Path.GetExtension(entry.Path);
+                entry.CompressMethod = nameExt == ".txt" ? (byte)1 : (byte)0;
 
                 EncryptNameBytes(nameBytes);
 
@@ -197,9 +198,12 @@ namespace YPF_Tool
                 Console.WriteLine($"Add \"{entry.Path}\"");
 
                 var data = File.ReadAllBytes(entry.LocalPath);
+                entry.DataSize = (uint)data.Length;
+
+                data = entry.CompressMethod == 1 ? Extensions.Deflate(data) : data;
+                entry.CompressedDataSize = (uint)data.Length;
 
                 entry.DataOffset = writer.BaseStream.Position;
-                entry.DataSize = (uint)data.Length;
                 entry.DataHash = MurmurHash2.Compute(data);
 
                 writer.Write(data);
@@ -212,9 +216,9 @@ namespace YPF_Tool
             {
                 writer.BaseStream.Position = entry.Position;
 
-                writer.Write((byte)0);          // compress method, 0 - no compression
+                writer.Write(entry.CompressMethod);          // compress method, 0 - no compression
                 writer.Write(entry.DataSize);   // original size
-                writer.Write(entry.DataSize);   // compressed size, equal to original size if no compression
+                writer.Write(entry.CompressedDataSize);   // compressed size, equal to original size if no compression
                 writer.Write(entry.DataOffset);
                 writer.Write(entry.DataHash);
             }
@@ -311,9 +315,11 @@ namespace YPF_Tool
         {
             public string LocalPath;
             public string Path;
+            public byte CompressMethod;
             public long Position;
             public long DataOffset;
             public uint DataSize;
+            public uint CompressedDataSize;
             public uint DataHash;
         }
 

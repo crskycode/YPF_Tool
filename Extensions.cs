@@ -38,5 +38,19 @@ namespace YPF_Tool
             return outputStream.ToArray();
         }
 
+        public static byte[] Deflate(byte[] buffer)
+        {
+            Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+            using (MemoryStream memoryStream = new MemoryStream())
+            using (DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(memoryStream, deflater))
+            {
+                deflaterOutputStream.Write(buffer, 0, buffer.Length);
+                deflaterOutputStream.Flush();
+                deflaterOutputStream.Finish();
+
+                return memoryStream.ToArray();
+            }
+        }
+
     }
 }
